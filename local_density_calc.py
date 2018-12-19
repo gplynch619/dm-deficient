@@ -31,15 +31,15 @@ def getTimestep(datafile):
 def listRange(l):
     return range(l[0], l[1]+1)
 
-def getData(dataFile, *args): #Takes a data file and a list of attributes as input, and returns an array whose columns are the attributes from the file (e.g. mass, position, etc)
-    nObjects = gio.gio_read(dataFile, args[0]).shape[0] #gets number of objects in file by checking the shape of the numpy array returned from the first arg .
+def getData(dataFile, rank, size, *args): #Takes a data file and a list of attributes as input, and returns an array whose columns are the attributes from the file (e.g. mass, position, etc)
+    nObjects = gio.gio_read(dataFile, args[0], rank, size).shape[0] #gets number of objects in file by checking the shape of the numpy array returned from the first arg .
     data_array = np.empty(shape=(nObjects, len(args)+1), dtype=float)#one row per object, one column per arg
     names = []
     formats = []
     for index, arg in enumerate(args):
-        data_array[:,index] = gio.gio_read(dataFile, arg).flatten()
+        data_array[:,index] = gio.gio_read(dataFile, arg, rank, size).flatten()
         names.append(arg)
-        formats.append(type(gio.gio_read(dataFile, arg).flatten()[0]))
+        formats.append(type(gio.gio_read(dataFile, arg, rank, size).flatten()[0]))
     data_array[:, len(args)] = np.full((nObjects,), getTimestep(dataFile))
     names.append('timestep')
     formats.append('i4')
