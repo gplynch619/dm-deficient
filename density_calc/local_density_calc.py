@@ -88,9 +88,10 @@ def main():
 
     core_data = []
     for core_file in core_files.values(): #returns list of numpy arrays, one for each timestep, with disrupted cores stipped out
-        arr = getData(core_file, "core_tag", "x", "y", "z", "radius")
+        arr = getData(core_file,0, 1,  "core_tag", "x", "y", "z", "radius")
         m = arr['radius'] < 0.05
         arr = arr[m]
+        print(arr.shape)
         core_data.append(arr)
         print "Cores from timestep ",arr[0]['timestep']," have been stripped..."
 

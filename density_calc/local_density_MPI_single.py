@@ -17,8 +17,10 @@ size = comm.Get_size()
 ########################################
 
 ######### Defining constants ###########
-core_file = '/media/luna1/dkorytov/data/AlphaQ/core_catalog5/07_13_17.AlphaQ.487.coreproperties'
-particle_file = '/home/jphollowed/data/hacc/alphaQ/particles/downsampled_particles/STEP487/m000.mpicosmo.487'
+#core_file = '/media/luna1/dkorytov/data/AlphaQ/core_catalog5/07_13_17.AlphaQ.487.coreproperties'
+core_file = sys.argv[1]
+particle_file = sys.argv[2]
+#particle_file = '/home/jphollowed/data/hacc/alphaQ/particles/downsampled_particles/STEP487/m000.mpicosmo.487'
 r_avg = 0.018 #estimate of average radius
 #######################################
 
