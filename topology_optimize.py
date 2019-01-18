@@ -17,6 +17,23 @@ with smallest c - a.
 
 As written, I think this is O(S^D) :O 
 
+Parameters
+---------------
+size:
+    The final number of subdivisions you would like. In practice this is usually your
+    number of MPI ranks, hence the name 'size'. Should be an int.
+
+dim:
+    The dimension of the space you are subdividing. Usually 2 or 3, but in theory
+    could be anything
+
+Returns
+---------
+grid_topology:
+    A list of size dim giving the topology along each dimension. For example, [2, 3, 4] 
+    would correspond to the x axis having two subdivisions, y having 3, and z having 4,
+    for a total of 24 blocks. This is in fact the optimal topology for size=24.
+
 '''
 
 import itertools
@@ -54,8 +71,11 @@ def topology_optimizer(size, dim):
         if diff < x:
             x = diff
             fi = i
-    return list(final_list[fi])
     
+    grid_topology =  list(final_list[fi])
+    
+    return grid_topology
+
 if __name__ == "__main__":
     while True:
         num = input("What number should I factor?\n")
