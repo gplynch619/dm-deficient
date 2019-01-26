@@ -6,16 +6,17 @@ import sys
 import numpy as np
 import genericio as gio
 import redist as rd
-import matplotlib.pyplot as plt
 import time
 
 from mpi4py import MPI
+from topology_optimize import topology_optimizer
 ######### MPI ##########################
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
-
 ########################################
+
+######### Defining constants ###########
 r_avg = 0.018 #estimate of average radius
 #######################################
 
@@ -42,10 +43,10 @@ def getData(dataFile, rank, size, *args): #Takes a data file and a list of attri
     names = []
     formats = []
     for index, arg in enumerate(args):
-        arr  = gio.gio_read(dataFile, arg, rank, size).flatten()
+        arr = gio.gio_read(dataFile, arg, rank, size).flatten()
         data_array[:,index] = arr
         names.append(arg)
-        formats.append(type(arr[0])
+        formats.append(type(arr[0]))
     dtype = dict(names = names, formats=formats)
     new_array = np.core.records.fromarrays(data_array.transpose(), dtype)
     return new_array
@@ -73,81 +74,91 @@ def computeMass(core, sorted_list):
 
     local_particles = reduce(np.intersect1d, (x, y, z))
 
-    return len(local_particles)
+    return local_particles
 #########################################################################
 
 ########################## Main Program #################################
 #make dict of timestep -> file
 def main():
-    core_file = sys.argv[1]
+
+    core_file = sys.argv[1] 
     particle_file = sys.argv[2]
+
   
     #load timestep
-    cores = getData(core_file, rank, size, "core_tag", "x", "y", "z", "radius")
-    print "Data for rank ",rank," loaded" 
+    start = time.time()
+    cores = getData(core_file, rank, size, "core_tag", "x", "y", "z", "fof_halo_tag", "radius")
     m = cores['radius'] < 0.05
     cores = cores[m]
     
+    end = time.time()
+    time_length = end - start
+    st = "load cores {0} {1}".format(rank, time_length)
+    print st
     comm.barrier()
    
-    print "Loading and redistributing data..."
     
-    grid_partition = int(np.cbrt(size))
+    grid_topology = topology_optimizer(size, 3)
 
-    redist = rd.MPIGridRedistributor(comm, [grid_partition,grid_partition, grid_partition], [256, 256, 256])
+    redist = rd.MPIGridRedistributor(comm, grid_topology, [256, 256, 256])
     
     pos = redist.stack_position([cores['x'], cores['y'], cores['z']])
     
-    redist_cores = redist.redistribute_by_position(cores, pos, overload_lengths=[r_avg, r_avg, r_avg])
+    start = time.time()
+    redist_cores = redist.redistribute_by_position(cores, pos, overload_lengths=[0, 0, 0])
+    end = time.time()
+    time_length = end - start
+    st = "redist cores {0} {1}".format(rank, time_length)
+    print st
+
     
-    str_out = "Rank {0} has Min{1} of {2} and Max{1} of {3}, with {4}|{5} split"
-    
-    xmin = np.amin(redist_cores_at_timestep[0]['x'])
-    xmax = np.amax(redist_cores_at_timestep[0]['x'])
-    xless = np.sum(redist_cores_at_timestep[0]['x'] < 128)
-    xmore =  np.sum(redist_cores_at_timestep[0]['x'] >= 128)
-
-    ymin = np.amin(redist_cores_at_timestep[0]['y'])
-    ymax = np.amax(redist_cores_at_timestep[0]['y'])
-    yless = np.sum(redist_cores_at_timestep[0]['y'] < 128)
-    ymore =  np.sum(redist_cores_at_timestep[0]['y'] >= 128)
-    
-    zmin = np.amin(redist_cores_at_timestep[0]['z'])
-    zmax = np.amin(redist_cores_at_timestep[0]['z'])
-    zless = np.sum(redist_cores_at_timestep[0]['z'] < 128)
-    zmore =  np.sum(redist_cores_at_timestep[0]['z'] >= 128)
-   
-    #wait a bit based on rank so outputs aren't all mangled
-    #sleep(0.5*rank) 
-    #print(str_out.format(rank, "X", xmin, xmax, xless, xmore))
-    #print(str_out.format(rank, "Y", ymin, ymax, yless, ymore))
-    #print(str_out.format(rank, "Z", zmin, zmax, zless, zmore))
-    #print('\n')
-
-    #at this point, if all has gone well, the core data should be loaded and spatially distributed across ranks. We now want to do the same with the particles
-
-
-    timestep = cores[0]['timestep']
+    timestep = getTimestep(core_file)
+    start = time.time()
     particles = getData(particle_file, rank, size, 'id', 'x', 'y', 'z')
+    end = time.time()
+    
+    time_length = end - start
+    st = "load particles {0} {1}".format(rank, time_length)
+    print st
+
+    comm.barrier()
+
     particle_pos = redist.stack_position([particles['x'], particles['y'], particles['z']])
-
-    redist_particles = redist.redistribute_by_position(particles, particle_pos, overload_lengths=[r_avg, r_avg, r_avg])
    
-    print "Rank {0} has loaded particles for timestep {1}".format(rank, timestep)
+    start = time.time()
+    redist_particles = redist.redistribute_by_position(particles, particle_pos, overload_lengths=[0,0,0])
+    end = time.time()
+  
+    time_length = end - start
+    st = "redist particles {0} {1}".format(rank, time_length)
+    print st    
 
+    start = time.time()
     li = []
     li.append(redist_particles[redist_particles['x'].argsort()])
     li.append(redist_particles[redist_particles['y'].argsort()])
     li.append(redist_particles[redist_particles['z'].argsort()])
-    s = "outputs/487/MPI_{0}.out#{1}".format(timestep,rank)
-    f = open(s, "w")
-    f.write('Core Tag | Local particles | (x,y,z) | Radius')
+    end = time.time()
+    time_length = end - start
+    print "sorting {0} {1}".format(rank, time_length)
+
+#    s = "/home/gplynch/proj/output/{0}/MPI_{0}.out#{1}".format(timestep,rank)
+#    f = open(s, "w+")
+#    f.write('Core Tag | Local particles | (x,y,z) | Radius')
+ 
+    start = time.time()
+    saved_cores_tmp = []
     for i, core in enumerate(cores):
-        m = computeMass(core, li)
+        p = computeMass(core, li)
+        m = len(p)
         if m < 50:
-            s1 = "{0} {1} ({2},{3},{4}) {5}\n".format(core['core_tag'], m, core['x'], core['y'], core['z'], core['radius'])
-            f.write(s1) 
-    f.close()
+	    saved_cores_tmp.append(core)
+    saved_cores = np.array(saved_cores_tmp)
+    s = "/home/gplynch/proj/output/{0}/01_22_19.{0}.deficientcores#{1}".format(timestep, rank)
+    np.save(s, saved_cores)
+    end = time.time()
+    time_length = end - start
+    st = "calc {0} {1}".format(rank, time_length)
 
 if __name__ == '__main__':
     main()
