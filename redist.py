@@ -5,8 +5,6 @@ from  __future__ import print_function, division
 
 from mpi4py import  MPI
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 def mpi_grid_redistribute(data, pos, grid_topology, box_lengths, comm , overload_lengths = None, periodic=True):
     redist = MPIGridRedistributor(comm, grid_topology, box_lengths)
@@ -393,4 +391,4 @@ def redist_test2():
     
 if __name__ == "__main__":
     #redist();
-    redist_test2();
+    redist_test2()

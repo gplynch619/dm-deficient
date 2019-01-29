@@ -150,7 +150,7 @@ def main():
         p = computeMass(core, li)
         m = len(p)
         if m < 50:
-            mass_dict[n] = m
+            count_dict[n] = m
 	    saved_cores_list.append(core)
             n += 1
     #This block of code adds a new field to store the count of particles. Try to optimize       
