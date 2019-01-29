@@ -5,7 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import colormaps as cmaps
 
-sys.path.insert(0, '/home/lynchg/dm-deficient/density_calc/')
+sys.path.insert(0, '/home/lynchg/dm-deficient/')
 from local_density_MPI import getData
 from matplotlib.colors import LogNorm
 

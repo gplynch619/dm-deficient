@@ -87,7 +87,7 @@ def main():
   
     #load timestep
     start = time.time()
-    cores = getData(core_file, rank, size, "core_tag", "x", "y", "z", "fof_halo_tag", "radius")
+    cores = getData(core_file, rank, size, "core_tag", "x", "y", "z", "fof_halo_tag", "infall_mass","radius")
     m = cores['radius'] < 0.05
     cores = cores[m]
     
@@ -141,21 +141,29 @@ def main():
     end = time.time()
     time_length = end - start
     print "sorting {0} {1}".format(rank, time_length)
-
-#    s = "/home/gplynch/proj/output/{0}/MPI_{0}.out#{1}".format(timestep,rank)
-#    f = open(s, "w+")
-#    f.write('Core Tag | Local particles | (x,y,z) | Radius')
  
     start = time.time()
-    saved_cores_tmp = []
+    saved_cores_list = []
+    count_dict = {}
+    n = 0
     for i, core in enumerate(cores):
         p = computeMass(core, li)
         m = len(p)
         if m < 50:
-	    saved_cores_tmp.append(core)
-    saved_cores = np.array(saved_cores_tmp)
-    s = "/home/gplynch/proj/output/{0}/01_22_19.{0}.deficientcores#{1}".format(timestep, rank)
-    np.save(s, saved_cores)
+            mass_dict[n] = m
+	    saved_cores_list.append(core)
+            n += 1
+    #This block of code adds a new field to store the count of particles. Try to optimize       
+    
+    saved_cores_tmp = np.array(saved_cores_list)
+    final_cores = np.empty(saved_cores_tmp.shape, dtype=saved_cores_tmp.dtype.descr + [('count',np.int8)])
+    for name in saved_cores_tmp.dtype.names:
+        final_cores[name] = saved_cores_tmp[name]
+    for i, elem in enumerate(final_cores):
+        elem['count']=count_dict[i]
+    
+    s = "/home/gplynch/proj/output/{0}B/01_22_19.{0}.deficientcores#{1}".format(timestep, rank)
+    np.save(s, final_cores)
     end = time.time()
     time_length = end - start
     st = "calc {0} {1}".format(rank, time_length)
