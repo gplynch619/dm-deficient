@@ -156,7 +156,7 @@ def main():
     #This block of code adds a new field to store the count of particles. Try to optimize       
     
     saved_cores_tmp = np.array(saved_cores_list)
-    final_cores = np.empty(saved_cores_tmp.shape, dtype=saved_cores_tmp.dtype.descr + [('count',np.int8)])
+    final_cores = np.empty(saved_cores_tmp.shape, dtype=saved_cores_tmp.dtype.descr + [('count',np.int16)])
     for name in saved_cores_tmp.dtype.names:
         final_cores[name] = saved_cores_tmp[name]
     for i, elem in enumerate(final_cores):
