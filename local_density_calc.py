@@ -17,7 +17,7 @@ size = comm.Get_size()
 ########################################
 
 ######### Defining constants ###########
-r_avg = 0.018 #estimate of average radius
+r_avg = 0.1800 #estimate of average radius
 #######################################
 
 ######### Function definitions ########
@@ -84,75 +84,45 @@ def main():
     core_file = sys.argv[1] 
     particle_file = sys.argv[2]
 
-  
+    start=time.time()
     #load timestep
-    start = time.time()
     cores = getData(core_file, rank, size, "core_tag", "x", "y", "z", "fof_halo_tag", "infall_mass","radius")
     m = cores['radius'] < 0.05
     cores = cores[m]
     
-    end = time.time()
-    time_length = end - start
-    st = "load cores {0} {1}".format(rank, time_length)
-    print st
     comm.barrier()
    
-    
+    #Begin Redistribution#
     grid_topology = topology_optimizer(size, 3)
-
     redist = rd.MPIGridRedistributor(comm, grid_topology, [256, 256, 256])
-    
-    pos = redist.stack_position([cores['x'], cores['y'], cores['z']])
-    
-    start = time.time()
+    pos = redist.stack_position([cores['x'], cores['y'], cores['z']])    
     redist_cores = redist.redistribute_by_position(cores, pos, overload_lengths=[0, 0, 0])
-    end = time.time()
-    time_length = end - start
-    st = "redist cores {0} {1}".format(rank, time_length)
-    print st
 
     
     timestep = getTimestep(core_file)
-    start = time.time()
     particles = getData(particle_file, rank, size, 'id', 'x', 'y', 'z')
-    end = time.time()
     
-    time_length = end - start
-    st = "load particles {0} {1}".format(rank, time_length)
-    print st
-
     comm.barrier()
 
     particle_pos = redist.stack_position([particles['x'], particles['y'], particles['z']])
-   
-    start = time.time()
     redist_particles = redist.redistribute_by_position(particles, particle_pos, overload_lengths=[0,0,0])
-    end = time.time()
-  
-    time_length = end - start
-    st = "redist particles {0} {1}".format(rank, time_length)
-    print st    
+    #End Redistribution#
 
-    start = time.time()
     li = []
     li.append(redist_particles[redist_particles['x'].argsort()])
     li.append(redist_particles[redist_particles['y'].argsort()])
     li.append(redist_particles[redist_particles['z'].argsort()])
-    end = time.time()
-    time_length = end - start
-    print "sorting {0} {1}".format(rank, time_length)
  
-    start = time.time()
     saved_cores_list = []
     count_dict = {}
     n = 0
     for i, core in enumerate(cores):
         p = computeMass(core, li)
         m = len(p)
-        if m < 50:
-            count_dict[n] = m
-	    saved_cores_list.append(core)
-            n += 1
+        #if m < 50:
+	count_dict[n] = m
+	saved_cores_list.append(core)
+        n += 1
     #This block of code adds a new field to store the count of particles. Try to optimize       
     
     saved_cores_tmp = np.array(saved_cores_list)
@@ -162,11 +132,18 @@ def main():
     for i, elem in enumerate(final_cores):
         elem['count']=count_dict[i]
     
-    s = "/home/gplynch/proj/output/{0}B/01_22_19.{0}.deficientcores#{1}".format(timestep, rank)
-    np.save(s, final_cores)
+    directory = "/home/gplynch/proj/dm-deficient/output/"
+    filename = "{0}E/02_04_19.{0}.deficientcores#{1}".format(timestep, rank)
+    np.save(directory+filename, final_cores)
+    
     end = time.time()
     time_length = end - start
-    st = "calc {0} {1}".format(rank, time_length)
+    st = "Total time was {0} seconds".format(time_length)
+    if rank==0:
+        paramfile=directory+'{0}Eparams.txt'
+        with open(paramfile, 'w+') as f:
+	    f.write('Search radius length was {0}'.format(r_avg))
+	    f.write(st)
 
 if __name__ == '__main__':
     main()
