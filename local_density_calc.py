@@ -138,7 +138,7 @@ def main():
     
     end = time.time()
     time_length = end - start
-    st = "Total time was {1} seconds".format(time_length)
+    st = "Total time was {0} seconds".format(time_length)
     if rank==0:
         paramfile=directory+'{0}Eparams.txt'
         with open(paramfile, 'w+') as f:
