@@ -1,0 +1,60 @@
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import colormaps as cmaps
+
+def toStellarMass(haloMass):
+    #taken from arxiv.org/abs/0909.4305
+    x=haloMass/(10**11.4)
+    frac = 0.129*(x**-0.926 + x**0.261)**-2.440
+    stellar=haloMass*frac
+
+    return stellar
+
+def main():
+    sys.path.insert(0, '/home/lynchg/dm-deficient/')
+    from matplotlib.colors import LogNorm
+
+    directory = "/home/lynchg/dm-deficient/outputs/"
+    filename = sys.argv[1]
+
+    core_file = directory + filename
+
+    particleMass=1e9 
+
+    cores = np.load(core_file)
+
+    fig, axes = plt.subplots(nrows=1, ncols=1)
+
+    plt.rc('text', usetex=True)
+    plt.rc('font', **{'family':'serif', 'serif':['Computer Modern'], 'weight':'light'})
+
+    plt.register_cmap(name='viridis', cmap=cmaps.viridis)
+    plt.set_cmap(cmaps.viridis)
+
+    #Viridis = plt.get_cmap('viridis')
+
+    count = np.delete(cores['count'], np.where(cores['count']==0))
+    
+#    stellarMass=toStellarMass(cores['infall_mass'][cores['count']!=0.0])
+#    localMass=particleMass*count
+
+    localMass = particleMass*cores['infall_mass']
+    stellarMass=toStellarMass(localMass)
+
+    print len(stellarMass)
+    print len(localMass)
+
+    axes.hist2d(localMass, stellarMass, bins=30, norm=LogNorm())
+
+    plt.xlabel(r'$M_{499} [M_\odot]$', fontsize=16)
+    plt.ylabel(r'$M_{infall} [M_\odot]}$', fontsize=16)
+    plt.title(r'Local mass to stellar mass, r = .1800', fontsize=16)
+
+
+    plt.show()
+    if sys.argv[2] == 's':
+        plt.savefig('/home/lynchg/dm-deficient/figures/local_stellar_big1.png')
+
+if __name__ == "__main__":
+    main()
