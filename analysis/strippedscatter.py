@@ -34,8 +34,9 @@ def main():
 
     #Viridis = plt.get_cmap('viridis')
 
-    count = np.delete(cores['count'], np.where(cores['count']==0))
-    
+    #count = np.delete(cores['count'], np.where(cores['count']==0))
+    count = cores['count'][cores['count']!=0.0]
+
     stellarMass=toStellarMass(cores['infall_mass'][cores['count']!=0.0])
     localMass=particleMass*count
 
@@ -50,8 +51,10 @@ def main():
 
 
     plt.show()
-    if sys.argv[2] == 's':
-        plt.savefig('/home/lynchg/dm-deficient/figures/local_stellar_big2.png')
-
+    try:
+        if sys.argv[2] == 's':
+            fig.savefig('/home/lynchg/dm-deficient/figures/local_stellar_big2.png')
+    except:
+        pass
 if __name__ == "__main__":
     main()

@@ -39,8 +39,8 @@ def main():
 #    stellarMass=toStellarMass(cores['infall_mass'][cores['count']!=0.0])
 #    localMass=particleMass*count
 
-    localMass = particleMass*cores['infall_mass']
-    stellarMass=toStellarMass(localMass)
+    localMass = particleMass*cores['count']
+    stellarMass=toStellarMass(cores['infall_mass'])
 
     print len(stellarMass)
     print len(localMass)
@@ -53,8 +53,10 @@ def main():
 
 
     plt.show()
-    if sys.argv[2] == 's':
-        plt.savefig('/home/lynchg/dm-deficient/figures/local_stellar_big1.png')
-
+    try:
+        if sys.argv[2] == 's':
+            fig.savefig('/home/lynchg/dm-deficient/figures/local_stellar_big1.png')
+    except:
+        pass
 if __name__ == "__main__":
     main()
